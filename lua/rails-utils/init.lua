@@ -1,7 +1,7 @@
 local has_telescope, builtin = pcall(require, 'telescope.builtin')
 
 if not has_telescope then
-	error('This plugin requires nvim-telescope/telescope.nvim')
+  error('This plugin requires nvim-telescope/telescope.nvim')
 end
 
 M = {}

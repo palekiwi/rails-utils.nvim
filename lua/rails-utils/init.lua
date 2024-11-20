@@ -6,7 +6,7 @@ end
 
 M = {}
 
--- tries to locate files which rendere the template in current buffer
+-- tries to locate files which render the template in current buffer
 M.find_template_render = function()
   local filename = vim.fn.expand("%:t:r:r"):gsub("^_", "")
   local regex = "(render|partial:)[\\s(]?[\'\"][^\\s]*" .. filename .. "[\'\"]\\B"

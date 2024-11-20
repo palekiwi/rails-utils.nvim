@@ -1,0 +1,1 @@
+# rails-utils.nvim

@@ -25,7 +25,7 @@ M.find_template = function()
   builtin.find_files(
     {
       search_dirs = { "app/views" },
-      search_file = vim.fn.expand("<cword>")
+      default_text = vim.fn.expand("<cfile>")
     }
   )
 end

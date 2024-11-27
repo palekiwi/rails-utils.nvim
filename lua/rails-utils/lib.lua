@@ -27,18 +27,14 @@ M.find_template = function()
 end
 
 M.alternate = function()
-  local filepath = vim.fn.expand("%")
-  if filepath == "" then return end
+  if vim.bo.filetype ~= "ruby" then return end
 
-  local parent = string.match(filepath, "[^%/]+")
-  local filename = string.match(filepath, "([^%/]+)%.rb$")
-  local no_filename = string.gsub(filepath, "[^%/]+%.rb$", "")
-  local rest = string.gsub(no_filename, "^[^%/]+", "")
+  local root, dirname, filename = string.match(vim.fn.expand("%:r"), "([^%/]+)/(.*)/([^%/]+)$")
 
-  if parent == "app" then
-    vim.cmd("e spec" .. rest .. filename .. "_spec.rb")
-  elseif parent == "spec" then
-    vim.cmd("e app" .. rest .. string.gsub(filename, "_spec$", "") .. ".rb")
+  if root == "app" then
+    vim.cmd("e spec/" .. dirname .. "/" .. filename .. "_spec.rb")
+  elseif root == "spec" then
+    vim.cmd("e app/" .. dirname .. "/" .. string.gsub(filename, "_spec$", "") .. ".rb")
   end
 end
 

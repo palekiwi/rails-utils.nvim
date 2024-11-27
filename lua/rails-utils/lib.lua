@@ -2,7 +2,7 @@ local builtin = require("telescope.builtin")
 
 M = {}
 
--- tries to locate files which render the template in current buffer
+--- tries to locate files which render the template in current buffer
 M.find_template_render = function()
   local filename = vim.fn.expand("%:t:r:r"):gsub("^_", "")
   local regex = "(render|partial:)[\\s(]?[\'\"][^\\s]*" .. filename .. "[\'\"]\\B"
@@ -16,7 +16,7 @@ M.find_template_render = function()
   )
 end
 
--- list templates with file names matching the word under cursor
+--- list templates with file names matching the word under cursor
 M.find_template = function()
   builtin.find_files(
     {
@@ -26,6 +26,7 @@ M.find_template = function()
   )
 end
 
+--- returns alternate file in either app/ or spec/
 M.alternate = function()
   if vim.bo.filetype ~= "ruby" then return end
 

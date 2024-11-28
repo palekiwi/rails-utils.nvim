@@ -7,6 +7,20 @@ M.find_template_render = function()
   if vim.bo.filetype ~= "eruby" then return end
 
   local dir, filename = string.match(vim.fn.expand("%:r:r"), "app/views/([^ ]*)/_?([^%s]*)")
+
+  local controller_file = "app/controllers/" .. dir .. "_controller.rb"
+  local cmd = "rg -n 'def " .. filename .. "' " .. controller_file
+
+  local handle = assert(io.popen(cmd))
+  local result = handle:read("*a")
+  handle:close()
+
+  local line = result:match("^%d+")
+
+  if line ~= nil then
+    return vim.cmd(string.format("e +%s %s", line, controller_file))
+  end
+
   local regex = "((\\s+(render|partial:)\\s*\\(?)|^\\s*)[\'\"](" .. dir .. "/)?" .. filename .. "[\'\"]"
 
   builtin.grep_string(

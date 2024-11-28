@@ -35,16 +35,17 @@ M.find_template_render = function()
     local path
 
     if dir ~= "" then
-      path = "app/views/" .. dir  .. "/" .. filename .. "/" .. method .. ".html.erb"
+      path = "app/views/" .. dir  .. "/" .. filename
     else
-      path = "app/views/" .. filename .. "/" .. method .. ".html.erb"
+      path = "app/views/" .. filename
     end
 
-    if vim.fn.filereadable(path) == 1 then
-      vim.cmd("e " .. path)
-    else
-      print("File " .. path .. " does not exist.")
-    end
+    builtin.find_files(
+      {
+        search_dirs = { path },
+        search_file = method .. "."
+      }
+    )
   end
 end
 

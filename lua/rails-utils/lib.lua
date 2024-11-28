@@ -9,7 +9,7 @@ M.find_template_render = function()
 
   builtin.grep_string(
     {
-      search_dirs = { "app" },
+      search_dirs = { "app/controllers", "app/views" },
       search = regex,
       use_regex = true
     }

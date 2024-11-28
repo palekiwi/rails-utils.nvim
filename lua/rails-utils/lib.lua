@@ -7,7 +7,7 @@ M.find_template_render = function()
   if vim.bo.filetype ~= "eruby" then return end
 
   local dir, filename = string.match(vim.fn.expand("%:r:r"), "app/views/([^ ]*)/_?([^%s]*)")
-  local regex = "(((render|partial:)\\s+\\(?*)|^\\s*)[\'\"](" .. dir .. "/)?" .. filename .. "[\'\"]"
+  local regex = "(((render|partial:)\\s*\\(?)|^\\s*)[\'\"](" .. dir .. "/)?" .. filename .. "[\'\"]"
 
   builtin.grep_string(
     {

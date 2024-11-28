@@ -4,8 +4,10 @@ M = {}
 
 --- tries to locate files which render the template in current buffer
 M.find_template_render = function()
-  local filename = vim.fn.expand("%:t:r:r"):gsub("^_", "")
-  local regex = "(((render|partial:)[\\s(]*)|^\\s*)[\'\"][^\\s]*" .. filename .. "[\'\"]"
+  if vim.bo.filetype ~= "eruby" then return end
+
+  local dir, filename = string.match(vim.fn.expand("%:r:r"), "app/views/([^ ]*)/_?([^%s]*)")
+  local regex = "(((render|partial:)\\s+\\(?*)|^\\s*)[\'\"](" .. dir .. "/)?" .. filename .. "[\'\"]"
 
   builtin.grep_string(
     {

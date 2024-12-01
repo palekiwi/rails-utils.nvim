@@ -62,7 +62,7 @@ end
 
 --- returns alternate file in either app/ or spec/
 M.alternate = function()
-  local filepath = utils.alterate_file()
+  local filepath = utils.alternate_file()
   if filepath == nil then
     return
   end

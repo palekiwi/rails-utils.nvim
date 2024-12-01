@@ -1,21 +1,37 @@
-local ns               = vim.api.nvim_create_namespace "rspec-live"
-local group            = vim.api.nvim_create_augroup("rspec-test", { clear = true })
+local utils  = require("rails-utils.utils")
+local notify = require("notify")
+
+local ns     = vim.api.nvim_create_namespace "rspec-live"
+local group  = vim.api.nvim_create_augroup("rspec-test", { clear = true })
 
 vim.cmd("highlight TestSuccess guifg=#56d364")
 vim.cmd("highlight TestFailure guifg=#f97583")
 
-local attach_to_buffer = function(bufnr)
+local attach_to_buffer = function()
   local state = {
-    bufnr = bufnr,
     tests = {},
   }
 
   vim.api.nvim_create_autocmd({ "BufWritePost" }, {
     group = group,
-    pattern = "*_spec.rb",
-    callback = function()
+    pattern = "*.rb",
+    callback = function(opts)
+      local notification
       local filename = vim.fn.expand("%")
+
+      state.spec_file = true
+
+      if not string.match(filename, "_spec.rb$") then
+        local filename_ = utils.alternate_file()
+        if filename_ == nil or vim.fn.filereadable(filename_) == 0 then return end
+
+        state.spec_file = false
+        filename = filename_
+      end
+
       local cmd = "docker exec spabreaks-test-1 bin/rspec " .. filename .. " --format j"
+
+      notification = notify(filename, "info", { title = "Running tests..." })
 
       vim.fn.jobstart(cmd, {
         stdout_buffered = true,
@@ -51,18 +67,14 @@ local attach_to_buffer = function(bufnr)
 
         on_exit = function(_)
           local failed = {}
-          vim.api.nvim_buf_clear_namespace(bufnr, ns, 0, -1)
+          vim.api.nvim_buf_clear_namespace(opts.buf, ns, 0, -1)
 
           for _, test in ipairs(state.tests) do
             local text = test.success and { "✓", "TestSuccess" } or { "× Test failed", "TestFailure" }
 
-            vim.api.nvim_buf_set_extmark(bufnr, ns, test.line, 0, {
-              virt_text = { text },
-            })
-
             if not test.success then
               table.insert(failed, {
-                bufnr = bufnr,
+                bufnr = opts.buf,
                 lnum = test.line,
                 col = 1,
                 end_col = 3,
@@ -72,19 +84,26 @@ local attach_to_buffer = function(bufnr)
                 user_data = {},
               })
             end
+
+            vim.print(state.spec_file)
+            if state.spec_file then
+              vim.api.nvim_buf_set_extmark(opts.buf, ns, test.line, 0, {
+                virt_text = { text },
+              })
+
+              vim.diagnostic.set(ns, opts.buf, failed, {})
+            end
           end
 
-          if #failed > 0 then
-            vim.notify("Failed: " .. #failed, vim.log.levels.ERROR)
+          if #failed == 0 then
+            notify(filename, "info", { title = "Pass", replace = notification })
           else
-            vim.notify("Pass.\n.100")
+            notify(filename, "error", { title = "Fail", replace = notification })
           end
-
-          vim.diagnostic.set(ns, bufnr, failed, {})
         end,
       })
     end
   })
 end
 
-attach_to_buffer(vim.api.nvim_get_current_buf())
+attach_to_buffer()

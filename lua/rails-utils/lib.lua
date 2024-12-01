@@ -1,4 +1,5 @@
 local builtin = require("telescope.builtin")
+local utils = require("rails-utils.utils")
 
 M = {}
 
@@ -61,15 +62,12 @@ end
 
 --- returns alternate file in either app/ or spec/
 M.alternate = function()
-  if vim.bo.filetype ~= "ruby" then return end
-
-  local root, dirname, filename = string.match(vim.fn.expand("%:r"), "([^%/]+)/(.*)/([^%/]+)$")
-
-  if root == "app" then
-    vim.cmd("e spec/" .. dirname .. "/" .. filename .. "_spec.rb")
-  elseif root == "spec" then
-    vim.cmd("e app/" .. dirname .. "/" .. string.gsub(filename, "_spec$", "") .. ".rb")
+  local filepath = utils.alterate_file()
+  if filepath == nil then
+    return
   end
+
+  vim.cmd("e " .. filepath)
 end
 
 return M

@@ -31,7 +31,11 @@ local attach_to_buffer = function()
 
       local cmd = "docker exec spabreaks-test-1 bin/rspec " .. filename .. " --format j"
 
-      notification = notify(filename, "info", { title = "Running tests..." })
+      notification = notify(filename, "info", {
+        title = "Running tests...",
+        hide_from_history = true,
+        timeout = false,
+      })
 
       vim.fn.jobstart(cmd, {
         stdout_buffered = true,
@@ -47,7 +51,13 @@ local attach_to_buffer = function()
               local decoded = vim.json.decode(line)
 
               state.tests = vim.tbl_map(function(ex)
-                local result = { success = true, line = ex.line_number - 1, description = ex.description, message = "" }
+                local result = {
+                  success = true,
+                  line = ex.line_number - 1,
+                  description = ex.description,
+                  pending = ex.pending_message == nil,
+                  message = ""
+                }
 
                 if ex.status == "failed" then
                   result = vim.tbl_deep_extend("force", result, {
@@ -92,9 +102,9 @@ local attach_to_buffer = function()
           end
 
           if #failed == 0 then
-            notify(filename, "info", { title = "Pass", replace = notification })
+            notify(filename, "info", { title = "Pass", replace = notification, timeout = 500 })
           else
-            notify(filename, "error", { title = "Fail", replace = notification })
+            notify(filename, "error", { title = "Fail", replace = notification, timeout = 2000 })
           end
         end,
       })

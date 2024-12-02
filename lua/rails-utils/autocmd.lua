@@ -41,27 +41,24 @@ local attach_to_buffer = function()
             return
           end
 
-          local start_line = 1
+          for _, line_ in ipairs(data) do
+            local line = line_:match('{".*}')
+            if line then
+              local decoded = vim.json.decode(line)
 
-          while data[start_line] and not data[start_line]:find('{".*}') do
-            start_line = start_line + 1
-          end
+              state.tests = vim.tbl_map(function(ex)
+                local result = { success = true, line = ex.line_number - 1, description = ex.description, message = "" }
 
-          if data[start_line] then
-            local decoded = vim.json.decode(data[start_line])
+                if ex.status == "failed" then
+                  result = vim.tbl_deep_extend("force", result, {
+                    success = false,
+                    message = ex.exception.message
+                  })
+                end
 
-            state.tests = vim.tbl_map(function(ex)
-              local result = { success = true, line = ex.line_number - 1, description = ex.description, message = "" }
-
-              if ex.status == "failed" then
-                result = vim.tbl_deep_extend("force", result, {
-                  success = false,
-                  message = ex.exception.message
-                })
-              end
-
-              return result
-            end, decoded.examples)
+                return result
+              end, decoded.examples)
+            end
           end
         end,
 
@@ -85,7 +82,6 @@ local attach_to_buffer = function()
               })
             end
 
-            vim.print(state.spec_file)
             if state.spec_file then
               vim.api.nvim_buf_set_extmark(opts.buf, ns, test.line, 0, {
                 virt_text = { text },

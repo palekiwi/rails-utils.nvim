@@ -39,9 +39,10 @@ end
 local attach_to_buffer = function()
   local state = {
     tests = {},
+    error = nil,
   }
 
-  vim.api.nvim_create_user_command("RSpecLineDiag", function()
+  vim.api.nvim_create_user_command("RSpecLineFail", function()
     local line = vim.fn.line "." - 1
     for _, test in pairs(state.tests) do
       if not test.success and test.line == line then
@@ -76,10 +77,15 @@ local attach_to_buffer = function()
         title = "Running tests...",
         hide_from_history = true,
         timeout = false,
+        render = "simple"
       })
 
       vim.fn.jobstart(cmd, {
         stdout_buffered = true,
+
+        on_stderr = function()
+          state.error = "An error has occurred."
+        end,
 
         on_stdout = function(_, data)
           if not data then
@@ -117,6 +123,11 @@ local attach_to_buffer = function()
           local failed = {}
           vim.api.nvim_buf_clear_namespace(opts.buf, ns, 0, -1)
 
+          if #state.tests == 0 and state.error ~= nil then
+            notify(state.error, "error", { title = "Error", replace = notification, timeout = 3000 })
+            return
+          end
+
           for _, test in ipairs(state.tests) do
             local text = test.success and { "✓", "TestSuccess" } or { "× Test failed", "TestFailure" }
 
@@ -143,7 +154,7 @@ local attach_to_buffer = function()
           end
 
           if #failed == 0 then
-            notify(filename, "info", { title = "Pass", replace = notification, timeout = 500 })
+            notify(filename, "info", { title = "Pass",  replace = notification, timeout = 1000 })
           else
             notify(filename, "error", { title = "Fail", replace = notification, timeout = 2000 })
           end

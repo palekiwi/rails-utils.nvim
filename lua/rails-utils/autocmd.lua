@@ -7,10 +7,26 @@ local group  = vim.api.nvim_create_augroup("rspec-test", { clear = true })
 vim.cmd("highlight TestSuccess guifg=#56d364")
 vim.cmd("highlight TestFailure guifg=#f97583")
 
+local parse_message = function(message)
+  return { message }
+end
+
 local attach_to_buffer = function()
   local state = {
     tests = {},
   }
+
+  vim.api.nvim_create_user_command("RSpecLineDiag", function()
+    local line = vim.fn.line "." - 1
+    for _, test in pairs(state.tests) do
+      if not test.success and test.line == line then
+        local buf = vim.api.nvim_create_buf(false, true)
+        vim.api.nvim_set_option_value("filetype", "markdown", { buf = buf } )
+        vim.api.nvim_buf_set_lines(buf, 0, -1, false, parse_message(test.message))
+        vim.api.nvim_open_win(buf, false, { split = 'below', win = 0})
+      end
+    end
+  end, {})
 
   vim.api.nvim_create_autocmd({ "BufWritePost" }, {
     group = group,

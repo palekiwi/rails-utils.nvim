@@ -7,8 +7,33 @@ local group  = vim.api.nvim_create_augroup("rspec-test", { clear = true })
 vim.cmd("highlight TestSuccess guifg=#56d364")
 vim.cmd("highlight TestFailure guifg=#f97583")
 
-local parse_message = function(message)
-  return { message }
+local format_output = function(entry)
+  local output = {
+    entry.description,
+    '===',
+    '',
+    '## Error',
+    entry.exception.class,
+    '',
+    '## Message',
+    '```rb',
+  }
+
+  for _, msg in ipairs(vim.split(entry.exception.message, "\n")) do
+    table.insert(output, msg)
+  end
+
+  table.insert(output, "```")
+  table.insert(output, "")
+
+  if entry.exception.backtrace ~= nil then
+    table.insert(output, "## Backtrace")
+    for _, val in ipairs(entry.exception.backtrace) do
+      table.insert(output, val)
+    end
+  end
+
+  return output
 end
 
 local attach_to_buffer = function()
@@ -22,7 +47,7 @@ local attach_to_buffer = function()
       if not test.success and test.line == line then
         local buf = vim.api.nvim_create_buf(false, true)
         vim.api.nvim_set_option_value("filetype", "markdown", { buf = buf } )
-        vim.api.nvim_buf_set_lines(buf, 0, -1, false, parse_message(test.message))
+        vim.api.nvim_buf_set_lines(buf, 0, -1, false, format_output(test))
         vim.api.nvim_open_win(buf, false, { split = 'below', win = 0})
       end
     end
@@ -72,13 +97,13 @@ local attach_to_buffer = function()
                   line = ex.line_number - 1,
                   description = ex.description,
                   pending = ex.pending_message == nil,
-                  message = ""
+                  exception = {}
                 }
 
                 if ex.status == "failed" then
                   result = vim.tbl_deep_extend("force", result, {
                     success = false,
-                    message = ex.exception.message
+                    exception = ex.exception
                   })
                 end
 
@@ -103,7 +128,7 @@ local attach_to_buffer = function()
                 end_col = 3,
                 severity = vim.diagnostic.severity.ERROR,
                 source = "rspec-live-tests",
-                message = test.message,
+                message = test.exception.message,
                 user_data = {},
               })
             end

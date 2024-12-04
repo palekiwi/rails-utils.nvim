@@ -58,18 +58,20 @@ local run_tests = function(opts)
     table.insert(filenames, vim.fn.expand("%"))
   end
 
-  local files = vim.tbl_map(function(file)
-    if not string.match(file, "_spec.rb$") then
-      local filename_ = utils.alternate_file()
-      if filename_ == nil or vim.fn.filereadable(filename_) == 0 then
-        return
-      else
-        return filename_
-      end
-    else
-      return file
-    end
-  end, filenames)
+  local files = {}
+  for _, el in ipairs(filenames) do
+    local spec = utils.spec_for(el)
+    files[spec] = true
+  end
+
+  files = vim.tbl_keys(files)
+
+  vim.print(table.concat(files, " "))
+  --- if filename_ == nil or vim.fn.filereadable(filename_) == 1 then
+  ---   return
+  --- else
+  ---   return filename_
+  --- end
 
   local cmd = "docker exec spabreaks-test-1 bin/rspec --format j " .. table.concat(files, " ")
 

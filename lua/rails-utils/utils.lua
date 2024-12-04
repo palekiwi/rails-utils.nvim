@@ -13,6 +13,16 @@ M.alternate_file = function()
   end
 end
 
+M.spec_for = function(filepath)
+  local root, dirname, filename = string.match(filepath, "([^%/]+)/(.*)/([^%/]+).rb$")
+
+  if root == "app" then
+    return "spec/" .. dirname .. "/" .. filename .. "_spec.rb"
+  else
+    return filepath
+  end
+end
+
 M.changed_files = function()
   local base_branch = vim.g.git_base or "master"
   local command = "git diff --name-only $(git merge-base HEAD " .. base_branch .. " )"

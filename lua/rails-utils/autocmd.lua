@@ -47,17 +47,21 @@ local attach_to_buffer = function()
     for _, test in pairs(state.tests) do
       if not test.success and test.line == line then
         local buf = vim.api.nvim_create_buf(false, true)
-        vim.api.nvim_set_option_value("filetype", "markdown", { buf = buf } )
+        vim.api.nvim_set_option_value("filetype", "markdown", { buf = buf })
         vim.api.nvim_buf_set_lines(buf, 0, -1, false, format_output(test))
-        vim.api.nvim_open_win(buf, false, { split = 'below', win = 0})
+        vim.api.nvim_open_win(buf, false, { split = 'below', win = 0 })
       end
     end
+  end, {})
+
+  vim.api.nvim_create_user_command("RSpecDiagnostics", function()
+    require'telescope.builtin'.diagnostics({ namespace = ns})
   end, {})
 
   vim.api.nvim_create_autocmd({ "BufWritePost" }, {
     group = group,
     pattern = "*.rb",
-    callback = function(opts)
+    callback = function()
       local notification
       local filename = vim.fn.expand("%")
 
@@ -100,6 +104,7 @@ local attach_to_buffer = function()
               state.tests = vim.tbl_map(function(ex)
                 local result = {
                   success = true,
+                  filename = ex.file_path,
                   line = ex.line_number - 1,
                   description = ex.description,
                   pending = ex.pending_message == nil,
@@ -121,22 +126,25 @@ local attach_to_buffer = function()
 
         on_exit = function(_)
           local failed = {}
-          vim.api.nvim_buf_clear_namespace(opts.buf, ns, 0, -1)
-
           if #state.tests == 0 and state.error ~= nil then
             notify(state.error, "error", { title = "Error", replace = notification, timeout = 3000 })
             return
           end
 
           for _, test in ipairs(state.tests) do
+            local bufnr = vim.fn.bufnr(test.filename, true)
+            vim.diagnostic.reset(ns)
+            vim.api.nvim_buf_clear_namespace(bufnr, ns, 0, -1)
+
             local text = test.success and { "✓", "TestSuccess" } or { "× Test failed", "TestFailure" }
 
             if not test.success then
-              table.insert(failed, {
-                bufnr = opts.buf,
+              failed[bufnr] = failed[bufnr] or {}
+
+              table.insert(failed[bufnr], {
+                bufnr = bufnr,
                 lnum = test.line,
                 col = 1,
-                end_col = 3,
                 severity = vim.diagnostic.severity.ERROR,
                 source = "rspec-live-tests",
                 message = test.exception.message,
@@ -144,17 +152,19 @@ local attach_to_buffer = function()
               })
             end
 
-            if state.spec_file then
-              vim.api.nvim_buf_set_extmark(opts.buf, ns, test.line, 0, {
+            if vim.api.nvim_get_current_buf() == bufnr then
+              vim.api.nvim_buf_set_extmark(bufnr, ns, test.line, 0, {
                 virt_text = { text },
               })
-
-              vim.diagnostic.set(ns, opts.buf, failed, {})
             end
           end
 
-          if #failed == 0 then
-            notify(filename, "info", { title = "Pass",  replace = notification, timeout = 1000 })
+          for bufnr, entries in pairs(failed) do
+            vim.diagnostic.set(ns, bufnr, entries, {})
+          end
+
+          if vim.tbl_isempty(failed) then
+            notify(filename, "info", { title = "Pass", replace = notification, timeout = 1000 })
           else
             notify(filename, "error", { title = "Fail", replace = notification, timeout = 2000 })
           end

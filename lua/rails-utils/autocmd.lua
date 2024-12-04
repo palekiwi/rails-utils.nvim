@@ -52,23 +52,30 @@ local run_tests = function(opts)
   ---local files = utils.changed_files()
 
   local notification
-  local filename
+  local filenames = {}
 
   if opts.scope == scope["file"] then
-    filename = vim.fn.expand("%")
+    table.insert(filenames, vim.fn.expand("%"))
   end
 
+  local files = vim.tbl_map(function(file)
+    if not string.match(file, "_spec.rb$") then
+      local filename_ = utils.alternate_file()
+      if filename_ == nil or vim.fn.filereadable(filename_) == 0 then
+        return
+      else
+        return filename_
+      end
+    else
+      return file
+    end
+  end, filenames)
 
-  if not string.match(filename, "_spec.rb$") then
-    local filename_ = utils.alternate_file()
-    if filename_ == nil or vim.fn.filereadable(filename_) == 0 then return end
+  local cmd = "docker exec spabreaks-test-1 bin/rspec --format j " .. table.concat(files, " ")
 
-    filename = filename_
-  end
+  local file_list = table.concat(files, "\n")
 
-  local cmd = "docker exec spabreaks-test-1 bin/rspec --format j " .. filename
-
-  notification = notify(filename, "info", {
+  notification = notify(file_list, "info", {
     title = "Running tests...",
     hide_from_history = true,
     timeout = false,
@@ -155,9 +162,9 @@ local run_tests = function(opts)
       end
 
       if vim.tbl_isempty(failed) then
-        notify(filename, "info", { title = "Pass", replace = notification, timeout = 1000 })
+        notify(file_list, "info", { title = "Pass", replace = notification, timeout = 1000 })
       else
-        notify(filename, "error", { title = "Fail", replace = notification, timeout = 2000 })
+        notify(file_list, "error", { title = "Fail", replace = notification, timeout = 2000 })
       end
     end,
   })

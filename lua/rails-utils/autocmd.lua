@@ -4,7 +4,13 @@ local notify = require("notify")
 local ns     = vim.api.nvim_create_namespace "rspec-live"
 local group  = vim.api.nvim_create_augroup("rspec-test", { clear = true })
 
-local state = {
+local scope  = {
+  ["file"] = 0,
+  ["pr"] = 1,
+  ["all"] = 2,
+}
+
+local state  = {
   tests = {},
   error = nil,
 }
@@ -41,24 +47,26 @@ local format_output = function(entry)
   return output
 end
 
-local run_tests = function()
+local run_tests = function(opts)
   --- TODO implement changed_files
   ---local files = utils.changed_files()
 
   local notification
-  local filename = vim.fn.expand("%")
+  local filename
 
-  state.spec_file = true
+  if opts.scope == scope["file"] then
+    filename = vim.fn.expand("%")
+  end
+
 
   if not string.match(filename, "_spec.rb$") then
     local filename_ = utils.alternate_file()
     if filename_ == nil or vim.fn.filereadable(filename_) == 0 then return end
 
-    state.spec_file = false
     filename = filename_
   end
 
-  local cmd = "docker exec spabreaks-test-1 bin/rspec " .. filename .. " --format j"
+  local cmd = "docker exec spabreaks-test-1 bin/rspec --format j " .. filename
 
   notification = notify(filename, "info", {
     title = "Running tests...",
@@ -169,13 +177,13 @@ local attach_to_buffer = function()
   end, {})
 
   vim.api.nvim_create_user_command("RSpecDiagnostics", function()
-    require'telescope.builtin'.diagnostics({ namespace = ns})
+    require 'telescope.builtin'.diagnostics({ namespace = ns })
   end, {})
 
   vim.api.nvim_create_autocmd({ "BufWritePost" }, {
     group = group,
     pattern = "*.rb",
-    callback = run_tests,
+    callback = function() run_tests({ scope = 0 }) end,
   })
 end
 

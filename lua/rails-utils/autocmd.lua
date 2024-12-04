@@ -42,6 +42,9 @@ local format_output = function(entry)
 end
 
 local run_tests = function()
+  --- TODO implement changed_files
+  ---local files = utils.changed_files()
+
   local notification
   local filename = vim.fn.expand("%")
 

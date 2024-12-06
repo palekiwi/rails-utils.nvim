@@ -5,6 +5,7 @@ local config = {
     test_success = "#6e9440",
     test_failure = "#cc6666",
   },
+  notification_max_lines = 3,
 }
 
 return config

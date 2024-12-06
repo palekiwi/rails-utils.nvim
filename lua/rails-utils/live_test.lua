@@ -50,6 +50,7 @@ end
 M.run_tests = function(opts)
   local notification
   local notification_body
+  local max_lines = config.notification_max_lines
   local filenames = {}
 
   if opts.scope == scope[1] then
@@ -71,10 +72,14 @@ M.run_tests = function(opts)
 
   if #files == 0 then
     return
-  elseif #files < 3 then
+  elseif #files <= max_lines then
     notification_body = table.concat(files, "\n")
   else
-    notification_body = "Total " .. #files .. " files"
+    local lines = vim.fn.extend(
+      vim.list_slice(files, 1, max_lines - 1),
+      {"...and " .. #files - (max_lines - 1) .. " other file(s)" }
+    )
+    notification_body = table.concat(lines, "\n")
   end
 
   local command = vim.fn.extend(opts.command or config.command, files)

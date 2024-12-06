@@ -70,7 +70,7 @@ M.run_tests = function(opts)
 
   if #files == 0 then return end
 
-  local command = vim.fn.extend(config.command, files)
+  local command = vim.fn.extend(opts.command or config.command, files)
 
   local file_list = table.concat(files, "\n")
 
@@ -122,7 +122,6 @@ M.run_tests = function(opts)
     end,
 
     on_exit = function(_)
-      vim.print(config)
       local failed = {}
       if #state.tests == 0 and state.error ~= nil then
         notify(state.error, "error", { title = "Error", replace = notification, timeout = 3000 })
@@ -179,10 +178,16 @@ M.show_failure_details = function()
   local line = vim.fn.line "." - 1
   for _, test in pairs(state.tests) do
     if not test.success and test.line == line then
-      local buf = vim.api.nvim_create_buf(false, true)
+      state.scratchpad = state.scratchpad or vim.api.nvim_create_buf(false, true)
+      local buf = state.scratchpad
+      vim.notify("" .. state.scratchpad)
+
       vim.api.nvim_set_option_value("filetype", "markdown", { buf = buf })
       vim.api.nvim_buf_set_lines(buf, 0, -1, false, format_output(test))
-      vim.api.nvim_open_win(buf, false, { split = 'below', win = 0 })
+
+      if vim.fn.getbufinfo(buf)[1].hidden == 1 then
+        vim.api.nvim_open_win(buf, false, { split = 'below', win = 0 })
+      end
     end
   end
 end

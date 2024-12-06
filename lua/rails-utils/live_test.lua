@@ -1,13 +1,14 @@
 local utils  = require("rails-utils.utils")
 local notify = require("notify")
 
+local M = {}
+
 local ns     = vim.api.nvim_create_namespace "rspec-live"
-local group  = vim.api.nvim_create_augroup("rspec-test", { clear = true })
 
 local scope  = {
-  ["file"] = 0,
-  ["pr"] = 1,
-  ["all"] = 2,
+  [1] = "file",
+  [2] = "pr",
+  [3] = "all",
 }
 
 local state  = {
@@ -47,15 +48,14 @@ local format_output = function(entry)
   return output
 end
 
-local run_tests = function(opts)
-  --- TODO implement changed_files
-  ---local files = utils.changed_files()
-
+M.run_tests = function(opts)
   local notification
   local filenames = {}
 
-  if opts.scope == scope["file"] then
+  if opts.scope == scope[1] then
     table.insert(filenames, vim.fn.expand("%"))
+  elseif scope[2] then
+    filenames = utils.changed_files()
   end
 
   local files = {}
@@ -171,28 +171,20 @@ local run_tests = function(opts)
   })
 end
 
-local attach_to_buffer = function()
-  vim.api.nvim_create_user_command("RSpecLineFail", function()
-    local line = vim.fn.line "." - 1
-    for _, test in pairs(state.tests) do
-      if not test.success and test.line == line then
-        local buf = vim.api.nvim_create_buf(false, true)
-        vim.api.nvim_set_option_value("filetype", "markdown", { buf = buf })
-        vim.api.nvim_buf_set_lines(buf, 0, -1, false, format_output(test))
-        vim.api.nvim_open_win(buf, false, { split = 'below', win = 0 })
-      end
-    end
-  end, {})
-
-  vim.api.nvim_create_user_command("RSpecDiagnostics", function()
+M.show_diagnostics = function()
     require 'telescope.builtin'.diagnostics({ namespace = ns })
-  end, {})
-
-  vim.api.nvim_create_autocmd({ "BufWritePost" }, {
-    group = group,
-    pattern = "*.rb",
-    callback = function() run_tests({ scope = 0 }) end,
-  })
 end
 
-attach_to_buffer()
+M.show_failure_details = function()
+  local line = vim.fn.line "." - 1
+  for _, test in pairs(state.tests) do
+    if not test.success and test.line == line then
+      local buf = vim.api.nvim_create_buf(false, true)
+      vim.api.nvim_set_option_value("filetype", "markdown", { buf = buf })
+      vim.api.nvim_buf_set_lines(buf, 0, -1, false, format_output(test))
+      vim.api.nvim_open_win(buf, false, { split = 'below', win = 0 })
+    end
+  end
+end
+
+return M

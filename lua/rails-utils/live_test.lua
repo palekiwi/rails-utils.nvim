@@ -1,7 +1,9 @@
 local utils  = require("rails-utils.utils")
 local notify = require("notify")
 
-local M = {}
+local config = require('rails-utils.config')
+
+local M      = {}
 
 local ns     = vim.api.nvim_create_namespace "rspec-live"
 
@@ -15,9 +17,6 @@ local state  = {
   tests = {},
   error = nil,
 }
-
-vim.cmd("highlight TestSuccess guifg=#56d364")
-vim.cmd("highlight TestFailure guifg=#f97583")
 
 local format_output = function(entry)
   local output = {
@@ -63,7 +62,6 @@ M.run_tests = function(opts)
     local spec = utils.spec_for(el)
 
     if spec and vim.fn.filereadable(spec) == 1 then
-      vim.print(spec)
       files[spec] = true
     end
   end
@@ -72,7 +70,7 @@ M.run_tests = function(opts)
 
   if #files == 0 then return end
 
-  local cmd = "docker exec spabreaks-test-1 bin/rspec --format j " .. table.concat(files, " ")
+  local command = vim.fn.extend(config.command, files)
 
   local file_list = table.concat(files, "\n")
 
@@ -83,7 +81,7 @@ M.run_tests = function(opts)
     render = "simple"
   })
 
-  vim.fn.jobstart(cmd, {
+  vim.fn.jobstart(command, {
     stdout_buffered = true,
 
     on_stderr = function()
@@ -124,18 +122,20 @@ M.run_tests = function(opts)
     end,
 
     on_exit = function(_)
+      vim.print(config)
       local failed = {}
       if #state.tests == 0 and state.error ~= nil then
         notify(state.error, "error", { title = "Error", replace = notification, timeout = 3000 })
         return
       end
 
+      vim.api.nvim_buf_clear_namespace(0, ns, 0, -1)
+
       for _, test in ipairs(state.tests) do
         local bufnr = vim.fn.bufnr(test.filename, true)
         vim.diagnostic.reset(ns)
-        vim.api.nvim_buf_clear_namespace(bufnr, ns, 0, -1)
 
-        local text = test.success and { "✓", "TestSuccess" } or { "× Test failed", "TestFailure" }
+        local text = test.success and { "✓", "RSpecTestSuccess" } or { "× Test failed", "RSpecTestFailure" }
 
         if not test.success then
           failed[bufnr] = failed[bufnr] or {}
@@ -172,7 +172,7 @@ M.run_tests = function(opts)
 end
 
 M.show_diagnostics = function()
-    require 'telescope.builtin'.diagnostics({ namespace = ns })
+  require 'telescope.builtin'.diagnostics({ namespace = ns })
 end
 
 M.show_failure_details = function()

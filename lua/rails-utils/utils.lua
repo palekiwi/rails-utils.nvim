@@ -18,7 +18,7 @@ M.spec_for = function(filepath)
 
   if root == "app" then
     return "spec/" .. dirname .. "/" .. filename .. "_spec.rb"
-  elseif root == "spec" then
+  elseif root == "spec" and string.match(filename, "_spec$") then
     return filepath
   end
 end

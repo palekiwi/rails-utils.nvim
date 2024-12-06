@@ -49,6 +49,7 @@ end
 
 M.run_tests = function(opts)
   local notification
+  local notification_body
   local filenames = {}
 
   if opts.scope == scope[1] then
@@ -68,13 +69,17 @@ M.run_tests = function(opts)
 
   files = vim.tbl_keys(files)
 
-  if #files == 0 then return end
+  if #files == 0 then
+    return
+  elseif #files < 3 then
+    notification_body = table.concat(files, "\n")
+  else
+    notification_body = "Total " .. #files .. " files"
+  end
 
   local command = vim.fn.extend(opts.command or config.command, files)
 
-  local file_list = table.concat(files, "\n")
-
-  notification = notify(file_list, "info", {
+  notification = notify(notification_body, "info", {
     title = "Running tests...",
     hide_from_history = true,
     timeout = false,
@@ -123,6 +128,7 @@ M.run_tests = function(opts)
 
     on_exit = function(_)
       local failed = {}
+      local count = 0
       if #state.tests == 0 and state.error ~= nil then
         notify(state.error, "error", { title = "Error", replace = notification, timeout = 3000 })
         return
@@ -148,6 +154,8 @@ M.run_tests = function(opts)
             message = test.exception.message,
             user_data = {},
           })
+
+          count = count + 1
         end
 
         if vim.api.nvim_get_current_buf() == bufnr then
@@ -162,9 +170,9 @@ M.run_tests = function(opts)
       end
 
       if vim.tbl_isempty(failed) then
-        notify(file_list, "info", { title = "Pass", replace = notification, timeout = 1000 })
+        notify(notification_body, "info", { title = "Pass", replace = notification, timeout = 1000 })
       else
-        notify(file_list, "error", { title = "Fail", replace = notification, timeout = 2000 })
+        notify(count .. " error(s).", "error", { title = "Fail", replace = notification, timeout = 2000 })
       end
     end,
   })

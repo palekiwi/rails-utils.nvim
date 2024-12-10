@@ -30,4 +30,17 @@ rails_utils.run_tests = live_test.run_tests
 rails_utils.show_diagnostics = live_test.show_diagnostics
 rails_utils.show_failure_details = live_test.show_failure_details
 
+vim.api.nvim_create_user_command("RSpecLiveTestOnSave", function()
+  local id
+  id = vim.api.nvim_create_autocmd({ "BufWritePost" }, {
+    group = vim.api.nvim_create_augroup("rails_live_test", { clear = true }),
+    pattern = "*.rb",
+    callback = function() rails_utils.run_tests({ scope = "file" }) end,
+  })
+
+  vim.api.nvim_create_user_command("RSpecLiveTestOnSaveCancel", function()
+    vim.api.nvim_del_autocmd(id)
+  end, {})
+end, {})
+
 return rails_utils

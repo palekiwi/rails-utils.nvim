@@ -21,3 +21,5 @@ TODO
 - [ ] display status icon next to each test
 - [ ] figure out how to cancel the job
 - [ ] treesitter scope for <C-l>
+- [ ] intercept logging to stdout
+- [ ] in diagnostics add shortcut to display errors in markdown

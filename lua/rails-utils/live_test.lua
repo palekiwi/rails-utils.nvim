@@ -174,6 +174,8 @@ M.run_tests = function(opts)
         vim.diagnostic.set(ns, bufnr, entries, {})
       end
 
+      vim.diagnostic.setqflist({open = true, namespace = ns, title = "RSpec Failures" })
+
       if vim.tbl_isempty(failed) then
         notify(notification_body, "info", { title = "Pass", replace = notification, timeout = 1000 })
       else
@@ -193,7 +195,6 @@ M.show_failure_details = function()
     if not test.success and test.line == line then
       state.scratchpad = state.scratchpad or vim.api.nvim_create_buf(false, true)
       local buf = state.scratchpad
-      vim.notify("" .. state.scratchpad)
 
       vim.api.nvim_set_option_value("filetype", "markdown", { buf = buf })
       vim.api.nvim_buf_set_lines(buf, 0, -1, false, format_output(test))

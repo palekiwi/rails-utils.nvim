@@ -6,7 +6,7 @@ M.alternate_file = function()
 
   local root, dirname, filename = string.match(vim.fn.expand("%:r"), "([^%/]+)/(.*)/([^%/]+)$")
 
-  if root == "app" then
+  if root == "app" or root == "lib" then
     return "spec/" .. dirname .. "/" .. filename .. "_spec.rb"
   elseif root == "spec" then
     return "app/" .. dirname .. "/" .. string.gsub(filename, "_spec$", "") .. ".rb"

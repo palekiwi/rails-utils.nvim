@@ -19,29 +19,27 @@ M.find_template_render = function()
     local controller_file = "app/controllers/" .. controller_prefix .. "_controller.rb"
 
     -- Check if controller file exists before trying to search it
-    if vim.fn.filereadable(controller_file) == 0 then
-      vim.notify("Controller file not found: " .. controller_file, vim.log.levels.WARN)
-      return
-    end
+    if vim.fn.filereadable(controller_file) == 1 then
+      local cmd = "rg -n 'def " .. filename .. "' " .. controller_file
+      local handle = io.popen(cmd)
 
-    local cmd = "rg -n 'def " .. filename .. "' " .. controller_file
-    local handle = io.popen(cmd)
+      if not handle then
+        vim.notify("Failed to execute ripgrep command", vim.log.levels.ERROR)
+        return
+      end
 
-    if not handle then
-      vim.notify("Failed to execute ripgrep command", vim.log.levels.ERROR)
-      return
-    end
+      local result = handle:read("*a")
+      local success, _, exit_code = handle:close()
 
-    local result = handle:read("*a")
-    local success, _, exit_code = handle:close()
-
-    -- Check if command executed successfully
-    if not success or exit_code ~= 0 then
-      -- Command failed, fall through to grep_string search
-    else
-      local line = result:match("^%d+")
-      if line then
-        return vim.cmd(string.format("e +%s %s", line, controller_file))
+      -- Check if command executed successfully
+      if success then
+        local line = result:match("^%d+")
+        if line then
+          return vim.cmd(string.format("e +%s %s", line, controller_file))
+        end
+      else
+        vim.notify("An error occurred. Exit code: " .. vim.print(exit_code))
+        return
       end
     end
 
